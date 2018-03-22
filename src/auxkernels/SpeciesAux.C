@@ -51,6 +51,9 @@ SpeciesAux::SpeciesAux(const InputParameters & parameters)
   problem_bc.add("NaCl", 0.1, "mol");
   */
 
+  std::cout << "n_vars: "<<_n_vars<<std::endl;
+
+
   Reaktoro::EquilibriumProblem reaktoro_problem(_reaktoro_system);
 
   reaktoro_problem.setTemperature(300, getParam<std::string>("temperature_units"));
@@ -65,8 +68,8 @@ SpeciesAux::SpeciesAux(const InputParameters & parameters)
     _vars.push_back(dynamic_cast<MooseVariable *>(getVar("species", i)));
 }
 
-void
-SpeciesAux::compute()
+Real
+SpeciesAux::computeValue()
 {
   std::vector<Real> values(_n_vars);
 
@@ -75,13 +78,7 @@ SpeciesAux::compute()
   for (unsigned int i = 0; i < _n_vars; i++)
     _vars[i]->setNodalValue(values[i]);
 
-  _var.setNodalValue(0.0);
-}
-
-Real
-SpeciesAux::computeValue()
-{
-  return 0.0;
+  return _vars[0]->nodalValue()[0];
 }
 
 void
@@ -102,4 +99,7 @@ SpeciesAux::computeVarValues(std::vector<Real> & values)
 
   for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
     values[i] = species_amounts[i];
+
+  if (_temp[_qp] > 399)
+    _state.output("results.txt");
 }

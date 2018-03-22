@@ -7,46 +7,51 @@
 []
 
 [Variables]
-  [./u]
-  [../]
+  [u]
+    initial_condition = 300
+  []
 []
 
 [AuxVariables]
-  [./from_sub]
-  [../]
+  [from_sub]
+    initial_condition = 300
+  []
+  [pressure]
+    initial_condition = 5e6
+  []
 []
 
 [Functions]
-  [./bc_func]
+  [bc_func]
     type = ParsedFunction
-    value = y+1
-  [../]
+    value = '300+(100*y)'
+  []
 []
 
 [Kernels]
-  [./diff]
+  [diff]
     type = Diffusion
     variable = u
-  [../]
-  [./time]
+  []
+  [time]
     type = TimeDerivative
     variable = u
-  [../]
+  []
 []
 
 [BCs]
-  [./left]
+  [left]
     type = DirichletBC
     variable = u
-    boundary = left
-    value = 0
-  [../]
-  [./right]
+    boundary = 'left'
+    value = 300
+  []
+  [right]
     type = FunctionDirichletBC
     variable = u
-    boundary = right
+    boundary = 'right'
     function = bc_func
-  [../]
+  []
 []
 
 [Executioner]
@@ -62,10 +67,15 @@
   exodus = true
 []
 
-[Modules/Reaktoro]
-  family = LAGRANGE
-  order = FIRST
-  substance_names = "H2O NaCl"
-  substance_amounts = "1 0.1"
-  substance_units = "kg mol"
+[Modules]
+  [Reaktoro]
+    # temperature = 'u'
+    family = LAGRANGE
+    order = FIRST
+    substance_names = 'H2O NaCl'
+    substance_amounts = '1 0.1'
+    substance_units = 'kg mol'
+    temperature = 'u'
+    pressure = 'pressure'
+  []
 []

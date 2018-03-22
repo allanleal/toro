@@ -28,7 +28,6 @@ public:
   SpeciesAux(const InputParameters & parameters);
 
 protected:
-  virtual void compute();
   virtual Real computeValue();
   virtual void computeVarValues(std::vector<Real> & values);
 
