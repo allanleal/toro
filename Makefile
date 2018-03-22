@@ -46,6 +46,7 @@ include $(MOOSE_DIR)/modules/modules.mk
 ###############################################################################
 
 #reaktoro
+ADDITIONAL_CPPFLAGS = -I$(REAKTORO_BUILD_DIR)/../Reaktoro -I$(REAKTORO_BUILD_DIR)/..
 EXTERNAL_FLAGS += -L$(REAKTORO_BUILD_DIR)/lib -lReaktoro
 # dep apps
 APPLICATION_DIR    := $(CURDIR)
