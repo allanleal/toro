@@ -3,6 +3,7 @@
 #include "AppFactory.h"
 #include "ModulesApp.h"
 #include "MooseSyntax.h"
+#include "AddSpeciesAction.h"
 
 template <>
 InputParameters
@@ -42,11 +43,15 @@ ToroApp::registerObjects(Factory & factory)
 }
 
 void
-ToroApp::associateSyntax(Syntax & /*syntax*/, ActionFactory & action_factory)
+ToroApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 {
+  std::cout << "Calling associate syntax" << std::endl;
+
   Registry::registerActionsTo(action_factory, {"ToroApp"});
 
-  /* Uncomment Syntax parameter and register your new production objects here! */
+  registerSyntax("AddSpeciesAction", "Modules/Reaktoro");
+  registerAction(AddSpeciesAction, "add_aux_variable");
+  registerAction(AddSpeciesAction, "add_aux_kernel");
 }
 
 void

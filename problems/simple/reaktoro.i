@@ -62,12 +62,9 @@
   exodus = true
 []
 
-[MultiApps]
-  [./reaktoro_MA]
-    type = ReaktoroMultiApp
-    app_type = ToroApp
-    execute_on = TIMESTEP_BEGIN
-    input_files = dummy.i
-    boundary = right
-  [../]
+[Modules/Reaktoro]
+  family = LAGRANGE
+  order = FIRST
+  multiapp = reaktoro_MA
+  species_prefix = "species_"
 []

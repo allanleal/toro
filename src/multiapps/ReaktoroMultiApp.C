@@ -13,6 +13,8 @@
 #include "FEProblem.h"
 #include "Reaktoro.hpp"
 
+using namespace Reaktoro;
+
 registerMooseObject("MooseApp", ReaktoroMultiApp);
 
 template <>
@@ -36,31 +38,28 @@ ReaktoroMultiApp::ReaktoroMultiApp(const InputParameters & parameters)
   : TransientMultiApp(parameters), BoundaryRestrictable(this, true) // true for applying to nodesets
 {
   //fillPositions();
-  using namespace Reaktoro;
-
   Database database("supcrt98.xml");
 
   ChemicalEditor editor(database);
   editor.addAqueousPhase({"H2O(l)", "H+", "OH-", "Na+", "Cl-"});
 
-  ChemicalSystem system(editor);
+  _system = ChemicalSystem(editor);
 
-  EquilibriumProblem problem_bc(system);
+  EquilibriumProblem problem_bc(_system);
   problem_bc.setTemperature(25, "celsius");
   problem_bc.setPressure(1, "bar");
   problem_bc.add("H2O", 1, "kg");
   problem_bc.add("NaCl", 0.1, "mol");
+  _state_bc = equilibrate(problem_bc);
 
-  EquilibriumProblem problem_ic(system);
+  EquilibriumProblem problem_ic(_system);
   problem_ic.setTemperature(25, "celsius");
   problem_ic.setPressure(1, "bar");
   problem_ic.add("H2O", 1, "kg");
+  _state_ic = equilibrate(problem_ic);
 
-  ChemicalState state_ic = equilibrate(problem_ic);
-  ChemicalState state_bc = equilibrate(problem_bc);
-
-  state_bc.output("state_bc.txt");
-  state_ic.output("state_ic.txt");
+  _state_bc.output("state_bc.txt");
+  _state_ic.output("state_ic.txt");
 
   fillPositions();
 }
@@ -92,4 +91,16 @@ ReaktoroMultiApp::fillPositions()
       _positions.push_back(node);
     }
   }
+}
+
+bool
+ReaktoroMultiApp::solveStep(Real dt, Real target_time, bool auto_advance)
+{
+  return true;
+}
+
+std::vector<std::string>
+ReaktoroMultiApp::getSpecies()
+{
+  return names(_system.species());
 }

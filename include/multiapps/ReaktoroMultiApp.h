@@ -13,6 +13,8 @@
 #include "TransientMultiApp.h"
 #include "BoundaryRestrictable.h"
 
+#include "Reaktoro/Reaktoro.hpp"
+
 class ReaktoroMultiApp;
 
 template <>
@@ -26,13 +28,19 @@ class ReaktoroMultiApp : public TransientMultiApp, public BoundaryRestrictable
 public:
   ReaktoroMultiApp(const InputParameters & parameters);
 
+  std::vector<std::string> getSpecies();
+
 protected:
-  /**
-   * _must_ fill in _positions with the positions of the sub-aps
-   */
-  void fillPositions() override;
+  virtual void fillPositions() override;
 
   virtual void initialSetup() override;
+
+  virtual bool solveStep(Real dt, Real target_time, bool auto_advance = true) override;
+
+private:
+  Reaktoro::ChemicalSystem _system;
+  Reaktoro::ChemicalState _state_bc;
+  Reaktoro::ChemicalState _state_ic;
 };
 
 #endif // ReaktoroMULTIAPP_H
