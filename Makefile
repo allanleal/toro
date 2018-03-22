@@ -45,6 +45,9 @@ POROUS_FLOW         := no
 include $(MOOSE_DIR)/modules/modules.mk
 ###############################################################################
 
+#reaktoro
+EXTERNAL_FLAGS += -L/home/bloech/projects/Reaktoro/build/lib -lReaktoro
+
 # dep apps
 APPLICATION_DIR    := $(CURDIR)
 APPLICATION_NAME   := toro
