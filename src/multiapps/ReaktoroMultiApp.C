@@ -37,16 +37,32 @@ ReaktoroMultiApp::ReaktoroMultiApp(const InputParameters & parameters)
 {
   //fillPositions();
   using namespace Reaktoro;
-  mooseWarning("Reaktoro start new");
-  ChemicalEditor editor;
+
+  Database database("supcrt98.xml");
+
+  ChemicalEditor editor(database);
   editor.addAqueousPhase({"H2O(l)", "H+", "OH-", "Na+", "Cl-"});
+
   ChemicalSystem system(editor);
-  EquilibriumProblem problem(system);
-      problem.add("H2O", 1, "kg");
-      problem.add("NaCl", 0.7, "mol");
-      ChemicalState state = equilibrate(problem);
-      state.output("result.txt");
-      fillPositions();
+
+  EquilibriumProblem problem_bc(system);
+  problem_bc.setTemperature(25, "celsius");
+  problem_bc.setPressure(1, "bar");
+  problem_bc.add("H2O", 1, "kg");
+  problem_bc.add("NaCl", 0.1, "mol");
+
+  EquilibriumProblem problem_ic(system);
+  problem_ic.setTemperature(25, "celsius");
+  problem_ic.setPressure(1, "bar");
+  problem_ic.add("H2O", 1, "kg");
+
+  ChemicalState state_ic = equilibrate(problem_ic);
+  ChemicalState state_bc = equilibrate(problem_bc);
+
+  state_bc.output("state_bc.txt");
+  state_ic.output("state_ic.txt");
+
+  fillPositions();
 }
 
 void
