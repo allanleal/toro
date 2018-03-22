@@ -35,16 +35,23 @@ validParams<AddSpeciesAction>()
                              orders,
                              "Specifies the order of the FE "
                              "shape function to use for the order parameters");
-  params.addRequiredParam<MultiAppName>("multiapp", "The name of the multiapp");
   params.addParam<Real>("scaling", 1.0, "Specifies a scaling factor to apply to this variable");
-  params.addRequiredParam<std::string>("species_prefix", "specifies the base name of the variables");
+
+  params.addParam<std::string>("pressure_units", "Pa", "Units pressure is in (Pa)");
+  params.addParam<std::string>("temperature_units", "K", "Units temperature is in (K)");
+
+  params.addParam<std::vector<VariableName>>("temperature", "The temperature.");
+  params.addParam<std::vector<VariableName>>("pressure", "The pressure.");
+
+  params.addRequiredParam<std::vector<std::string>>("substance_names", "Names of the substances, these go with substance_amounts and substance_units");
+  params.addRequiredParam<std::vector<Real>>("substance_amounts", "The amount of the substance_names");
+  params.addRequiredParam<std::vector<std::string>>("substance_units", "The units to use for each amount (kg, mol)");
+
   return params;
 }
 
 AddSpeciesAction::AddSpeciesAction(const InputParameters & params)
-  : Action(params),
-    _multiapp_name(getParam<MultiAppName>("multiapp")),
-    _species_prefix(getParam<std::string>("species_prefix"))
+  : Action(params)
 {
 }
 
@@ -54,6 +61,12 @@ AddSpeciesAction::act()
   if (_current_task == "add_aux_kernel")
   {
     InputParameters params = _factory.getValidParams("SpeciesAux");
+
+    params.applyParameters(_pars);
+
+    params.set<std::vector<VariableName>>("temperature") = getParam<std::vector<VariableName>>("temperature");
+    params.set<std::vector<VariableName>>("pressure") = getParam<std::vector<VariableName>>("pressure");
+
     params.set<AuxVariableName>("variable") = _species_names[0];
     params.set<std::vector<VariableName>>("species") = _species_names;
     params.set<Reaktoro::ChemicalSystem *>("reaktoro_system") = &_system;

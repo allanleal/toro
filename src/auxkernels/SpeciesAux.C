@@ -21,12 +21,27 @@ validParams<SpeciesAux>()
   params.addRequiredCoupledVar("species", "unknown (nl-variable)");
   params.addPrivateParam<Reaktoro::ChemicalSystem *>("reaktoro_system");
 
+  params.addParam<std::string>("pressure_units", "Pa", "Units pressure is in (Pa)");
+  params.addParam<std::string>("temperature_units", "K", "Units temperature is in (K)");
+
+  params.addCoupledVar("temperature", 300, "The temperature.");
+  params.addCoupledVar("pressure", 1e5, "The pressure.");
+
+  params.addRequiredParam<std::vector<std::string>>("substance_names", "Names of the substances, these go with substance_amounts and substance_units");
+  params.addRequiredParam<std::vector<Real>>("substance_amounts", "The amount of the substance_names");
+  params.addRequiredParam<std::vector<std::string>>("substance_units", "The units to use for each amount (kg, mol)");
+
   return params;
 }
 
 SpeciesAux::SpeciesAux(const InputParameters & parameters)
     : AuxKernel(parameters), _n_vars(coupledComponents("species")),
-      _reaktoro_system(*getCheckedPointerParam<Reaktoro::ChemicalSystem *>("reaktoro_system"))
+      _reaktoro_system(*getCheckedPointerParam<Reaktoro::ChemicalSystem *>("reaktoro_system")),
+      _substance_names(getParam<std::vector<std::string>>("substance_names")),
+      _substance_amounts(getParam<std::vector<Real>>("substance_amounts")),
+      _substance_units(getParam<std::vector<std::string>>("substance_units")),
+      _temp(coupledValue("temperature")),
+      _pressure(coupledValue("pressure"))
 {
   /*
   EquilibriumProblem problem_bc(_system);
@@ -37,9 +52,12 @@ SpeciesAux::SpeciesAux(const InputParameters & parameters)
   */
 
   Reaktoro::EquilibriumProblem reaktoro_problem(_reaktoro_system);
-  reaktoro_problem.setTemperature(25, "celsius");
-  reaktoro_problem.setPressure(1, "bar");
-  reaktoro_problem.add("H2O", 1, "kg");
+
+  reaktoro_problem.setTemperature(300, getParam<std::string>("temperature_units"));
+  reaktoro_problem.setPressure(1e5, getParam<std::string>("pressure_units"));
+
+  for (unsigned int i = 0; i < _substance_names.size(); i++)
+    reaktoro_problem.add(_substance_names[i], _substance_amounts[i], _substance_units[i]);
 
   _state = equilibrate(reaktoro_problem);
 
@@ -74,6 +92,9 @@ SpeciesAux::computeVarValues(std::vector<Real> & values)
   for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
     _state.setSpeciesAmount(i, species_amounts[i]);
   */
+
+  _state.setTemperature(_temp[_qp]);
+  _state.setPressure(_pressure[_qp]);
 
   equilibrate(_state);
 

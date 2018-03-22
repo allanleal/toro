@@ -65,6 +65,7 @@
 [Modules/Reaktoro]
   family = LAGRANGE
   order = FIRST
-  multiapp = reaktoro_MA
-  species_prefix = "species_"
+  substance_names = "H2O NaCl"
+  substance_amounts = "1 0.1"
+  substance_units = "kg mol"
 []

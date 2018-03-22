@@ -30,9 +30,6 @@ public:
 private:
   void createChemicalSystem();
 
-  const MultiAppName _multiapp_name;
-  const std::string _species_prefix;
-
   std::vector<VariableName> _species_names;
 
   Reaktoro::ChemicalSystem _system;

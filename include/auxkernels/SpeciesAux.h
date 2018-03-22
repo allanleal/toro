@@ -36,6 +36,14 @@ protected:
   std::vector<MooseVariable *> _vars;
 
   Reaktoro::ChemicalSystem & _reaktoro_system;
+
+  const std::vector<std::string> & _substance_names;
+  const std::vector<Real> & _substance_amounts;
+  const std::vector<std::string> & _substance_units;
+
+  const VariableValue & _temp;
+  const VariableValue & _pressure;
+
   Reaktoro::ChemicalState _state;
 };
 
