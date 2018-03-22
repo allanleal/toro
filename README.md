@@ -11,6 +11,7 @@ BOOST is located.
 
 
 cd build
+export BOOST_ROOT=/opt/moose/boost_1_63_0/include
 cmake .. -Wno-dev -DBOOST_INCLUDE_DIR=/opt/moose/boost_1_63_0/include
 make -j8
 
