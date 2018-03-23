@@ -100,6 +100,4 @@ SpeciesAux::computeVarValues(std::vector<Real> & values)
   for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
     values[i] = species_amounts[i];
 
-  if (_temp[_qp] > 399)
-    _state.output("results.txt");
 }
