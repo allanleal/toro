@@ -54,6 +54,10 @@ validParams<AddSpeciesAction>()
   params.addParam<std::vector<BoundaryName>>(
       "boundary", "The list of boundary IDs from the mesh where this boundary condition applies");
 
+  ExecFlagEnum execute_options = MooseUtils::getDefaultExecFlagEnum();
+  execute_options = EXEC_TIMESTEP_END;
+  params.addParam<ExecFlagEnum>("execute_on", execute_options, execute_options.getDocString());
+
   return params;
 }
 
@@ -87,6 +91,8 @@ AddSpeciesAction::act()
     params.set<std::vector<VariableName>>("species") = _species_names;
 
     params.set<UserObjectName>("reaktoro_problem") = "reaktoro_problem";
+
+    params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on");
 
     _problem->addAuxKernel("SpeciesAux", "species_aux", params);
   }
