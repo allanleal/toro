@@ -10,6 +10,8 @@
 #ifndef SPECIESAUX_H
 #define SPECIESAUX_H
 
+#include "ReaktoroProblemUserObject.h"
+
 #include "AuxKernel.h"
 #include "Reaktoro/Reaktoro.hpp"
 
@@ -33,11 +35,7 @@ protected:
   unsigned int _n_vars;
   std::vector<MooseVariable *> _vars;
 
-  Reaktoro::ChemicalSystem & _reaktoro_system;
-
-  const std::vector<std::string> & _substance_names;
-  const std::vector<Real> & _substance_amounts;
-  const std::vector<std::string> & _substance_units;
+  const ReaktoroProblemUserObject & _reactoro_problem;
 
   const VariableValue & _temp;
   const VariableValue & _pressure;

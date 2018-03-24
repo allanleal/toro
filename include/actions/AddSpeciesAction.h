@@ -12,6 +12,7 @@
 
 #include "InputParameters.h"
 #include "Action.h"
+
 #include "Reaktoro/Reaktoro.hpp"
 
 // Forward declaration
@@ -31,9 +32,6 @@ private:
   void createChemicalSystem();
 
   std::vector<VariableName> _species_names;
-
-  Reaktoro::ChemicalSystem _system;
-  Reaktoro::ChemicalState _state_bc;
 };
 
 template <>

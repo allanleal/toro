@@ -8,6 +8,7 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SpeciesAux.h"
+#include "ReaktoroProblemUserObject.h"
 
 registerMooseObject("ToroApp", SpeciesAux);
 
@@ -20,27 +21,18 @@ validParams<SpeciesAux>()
   params.addRequiredCoupledVar("species", "unknown (nl-variable)");
   params.addPrivateParam<Reaktoro::ChemicalSystem *>("reaktoro_system");
 
-  params.addParam<std::string>("pressure_units", "Pa", "Units pressure is in (Pa)");
-  params.addParam<std::string>("temperature_units", "K", "Units temperature is in (K)");
-
   params.addCoupledVar("temperature", 300, "The temperature.");
   params.addCoupledVar("pressure", 1e5, "The pressure.");
-
-  params.addRequiredParam<std::vector<std::string>>("substance_names", "Names of the substances, these go with substance_amounts and substance_units");
-  params.addRequiredParam<std::vector<Real>>("substance_amounts", "The amount of the substance_names");
-  params.addRequiredParam<std::vector<std::string>>("substance_units", "The units to use for each amount (kg, mol)");
 
   return params;
 }
 
 SpeciesAux::SpeciesAux(const InputParameters & parameters)
     : AuxKernel(parameters), _n_vars(coupledComponents("species")),
-      _reaktoro_system(*getCheckedPointerParam<Reaktoro::ChemicalSystem *>("reaktoro_system")),
-      _substance_names(getParam<std::vector<std::string>>("substance_names")),
-      _substance_amounts(getParam<std::vector<Real>>("substance_amounts")),
-      _substance_units(getParam<std::vector<std::string>>("substance_units")),
+      _reactoro_problem(getUserObject<ReaktoroProblemUserObject>("reactoro_problem")),
       _temp(coupledValue("temperature")),
-      _pressure(coupledValue("pressure"))
+      _pressure(coupledValue("pressure")),
+      _state(_reactoro_problem.getInitialState())
 {
   /*
   EquilibriumProblem problem_bc(_system);
@@ -49,19 +41,6 @@ SpeciesAux::SpeciesAux(const InputParameters & parameters)
   problem_bc.add("H2O", 1, "kg");
   problem_bc.add("NaCl", 0.1, "mol");
   */
-
-  std::cout << "n_vars: "<<_n_vars<<std::endl;
-
-
-  Reaktoro::EquilibriumProblem reaktoro_problem(_reaktoro_system);
-
-  reaktoro_problem.setTemperature(300, getParam<std::string>("temperature_units"));
-  reaktoro_problem.setPressure(1e5, getParam<std::string>("pressure_units"));
-
-  for (unsigned int i = 0; i < _substance_names.size(); i++)
-    reaktoro_problem.add(_substance_names[i], _substance_amounts[i], _substance_units[i]);
-
-  _state = equilibrate(reaktoro_problem);
 
   for (unsigned int i = 0; i < _n_vars; i++)
     _vars.push_back(dynamic_cast<MooseVariable *>(getVar("species", i)));

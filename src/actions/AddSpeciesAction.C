@@ -13,6 +13,7 @@
 #include "Factory.h"
 #include "FEProblem.h"
 #include "ReaktoroMultiApp.h"
+#include "ReaktoroProblemUserObject.h"
 
 #include "libmesh/string_to_enum.h"
 
@@ -69,15 +70,15 @@ AddSpeciesAction::act()
 
     params.set<AuxVariableName>("variable") = _species_names[0];
     params.set<std::vector<VariableName>>("species") = _species_names;
-    params.set<Reaktoro::ChemicalSystem *>("reaktoro_system") = &_system;
 
     _problem->addAuxKernel("SpeciesAux", "species_aux", params);
   }
   else if (_current_task == "add_aux_variable")
   {
-    createChemicalSystem();
+    const auto & reaktoro_problem = _problem->getUserObject<ReaktoroProblemUserObject>("uo");
 
-    auto species = names(_system.species());
+    auto species = reaktoro_problem.getSpeciesNames();
+
     for (const auto & species : species)
     {
       std::cout << species << std::endl;
@@ -90,20 +91,8 @@ AddSpeciesAction::act()
       _species_names.push_back(species);
     }
   }
-}
+  else if (_current_task == "add_user_objects")
+  {
 
-void
-AddSpeciesAction::createChemicalSystem()
-{
-  Database database("supcrt98.xml");
-
-  ChemicalEditor editor(database);
-  editor.addAqueousPhase({"H2O(l)", "H+", "OH-", "Na+", "Cl-"});
-
-  _system = ChemicalSystem(editor);
-
-
-
-//  _state_bc.output("state_bc.txt");
-//  _state_ic.output("state_ic.txt");
+  }
 }
