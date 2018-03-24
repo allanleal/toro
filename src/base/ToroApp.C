@@ -55,7 +55,7 @@ ToroApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   registerTask("add_reaktoro_aux_kernels", false);
   addTaskDependency("add_reaktoro_aux_kernels", "add_user_object");
 
-  registerSyntax("AddSpeciesAction", "Modules/Reaktoro");
+  registerSyntax("AddSpeciesAction", "Modules/Reaktoro/Problems/*");
   registerAction(AddSpeciesAction, "add_reaktoro_aux_variables");
   registerAction(AddSpeciesAction, "add_reaktoro_aux_kernels");
   registerAction(AddSpeciesAction, "add_user_object");

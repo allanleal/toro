@@ -69,29 +69,18 @@
 
 [Modules]
   [Reaktoro]
-    # temperature = 'u'
-    family = LAGRANGE
-    order = FIRST
+    [./Problems]
+      [./interior]
+        family = LAGRANGE
+	order = FIRST
 
-    substance_names = 'H2O NaCl'
-    substance_amounts = '1 0.1'
-    substance_units = 'kg mol'
+        substance_names = 'H2O NaCl'
+        substance_amounts = '1 0.1'
+        substance_units = 'kg mol'
 
-    temperature = 'u'
-    pressure = 'pressure'
-
-#    [./Problems]
-#      [./interior]
-#          substance_names = 'H2O NaCl'
-#    	  substance_amounts = '1 0.1'
-#    	  substance_units = 'kg mol'
-#      [../]
-#
-#      [./left_boundary]
-#          substance_names = 'H2O NaCl'
-#    	  substance_amounts = '1 0.1'
-#    	  substance_units = 'kg mol'
-#      [../]
-#    []
+        temperature = 'u'
+        pressure = 'pressure'
+      []
+    []
   []
 []
