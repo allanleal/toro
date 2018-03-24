@@ -69,10 +69,6 @@ AddSpeciesAction::AddSpeciesAction(const InputParameters & params)
 void
 AddSpeciesAction::act()
 {
-  std::cout << "AddSpeciesAction::act(): " << _current_task << std::endl;
-
-
-
   if (_current_task == "add_reaktoro_aux_kernels")
   {
     std::cout<< "Adding Kernels!" <<std::endl;
@@ -90,17 +86,17 @@ AddSpeciesAction::act()
     params.set<AuxVariableName>("variable") = _species_names[0];
     params.set<std::vector<VariableName>>("species") = _species_names;
 
-    params.set<UserObjectName>("reaktoro_problem") = "reaktoro_problem";
+    params.set<UserObjectName>("reaktoro_problem") = _name + "_reaktoro_problem";
 
     params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on");
 
-    _problem->addAuxKernel("SpeciesAux", "species_aux", params);
+    _problem->addAuxKernel("SpeciesAux", _name + "_species_aux", params);
   }
   else if (_current_task == "add_reaktoro_aux_variables")
   {
     std::cout<< "Adding Aux Variables!" <<std::endl;
 
-    const auto & reaktoro_problem = _problem->getUserObject<ReaktoroProblemUserObject>("reaktoro_problem");
+    const auto & reaktoro_problem = _problem->getUserObject<ReaktoroProblemUserObject>(_name + "_reaktoro_problem");
 
     auto species = reaktoro_problem.getSpeciesNames();
 
@@ -126,6 +122,6 @@ AddSpeciesAction::act()
 
     params.applyParameters(_pars);
 
-    _problem->addUserObject("ReaktoroProblemUserObject", "reaktoro_problem", params);
+    _problem->addUserObject("ReaktoroProblemUserObject", _name + "_reaktoro_problem", params);
   }
 }

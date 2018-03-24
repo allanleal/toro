@@ -43,7 +43,13 @@ SpeciesAux::SpeciesAux(const InputParameters & parameters)
   */
 
   for (unsigned int i = 0; i < _n_vars; i++)
+  {
+    // This is here so the dependency resolver knows that we're not going to try
+    // to access new values of this variable
+    coupledValueOld("species",i);
+
     _vars.push_back(dynamic_cast<MooseVariable *>(getVar("species", i)));
+  }
 }
 
 Real
