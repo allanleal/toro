@@ -70,7 +70,7 @@
 [Modules]
   [Reaktoro]
     [./Problems]
-      [./right]
+      [./bulk]
         family = LAGRANGE
 	order = FIRST
 
@@ -80,16 +80,14 @@
 
         temperature = 'u'
         pressure = 'pressure'
-
-        boundary = right
       []
       [./left]
         family = LAGRANGE
 	order = FIRST
 
-        substance_names = 'H2O NaCl'
-        substance_amounts = '1 0.1'
-        substance_units = 'kg mol'
+        substance_names = 'H2O'
+        substance_amounts = '1'
+        substance_units = 'kg'
 
         temperature = 'u'
         pressure = 'pressure'
