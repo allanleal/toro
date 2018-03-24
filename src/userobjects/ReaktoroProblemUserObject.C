@@ -14,7 +14,7 @@
 
 #include <ostream>
 
-registerMooseObject("MooseApp", ReaktoroProblemUserObject);
+registerMooseObject("ToroApp", ReaktoroProblemUserObject);
 
 template <>
 InputParameters

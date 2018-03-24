@@ -59,11 +59,15 @@ AddSpeciesAction::AddSpeciesAction(const InputParameters & params)
 void
 AddSpeciesAction::act()
 {
-  if (_current_task == "add_aux_kernel")
-  {
-    InputParameters params = _factory.getValidParams("SpeciesAux");
+  std::cout << "AddSpeciesAction::act(): " << _current_task << std::endl;
 
-    params.applyParameters(_pars);
+
+
+  if (_current_task == "add_reaktoro_aux_kernels")
+  {
+    std::cout<< "Adding Kernels!" <<std::endl;
+
+    InputParameters params = _factory.getValidParams("SpeciesAux");
 
     params.set<std::vector<VariableName>>("temperature") = getParam<std::vector<VariableName>>("temperature");
     params.set<std::vector<VariableName>>("pressure") = getParam<std::vector<VariableName>>("pressure");
@@ -71,11 +75,15 @@ AddSpeciesAction::act()
     params.set<AuxVariableName>("variable") = _species_names[0];
     params.set<std::vector<VariableName>>("species") = _species_names;
 
+    params.set<UserObjectName>("reaktoro_problem") = "reaktoro_problem";
+
     _problem->addAuxKernel("SpeciesAux", "species_aux", params);
   }
-  else if (_current_task == "add_aux_variable")
+  else if (_current_task == "add_reaktoro_aux_variables")
   {
-    const auto & reaktoro_problem = _problem->getUserObject<ReaktoroProblemUserObject>("uo");
+    std::cout<< "Adding Aux Variables!" <<std::endl;
+
+    const auto & reaktoro_problem = _problem->getUserObject<ReaktoroProblemUserObject>("reaktoro_problem");
 
     auto species = reaktoro_problem.getSpeciesNames();
 
@@ -91,8 +99,16 @@ AddSpeciesAction::act()
       _species_names.push_back(species);
     }
   }
-  else if (_current_task == "add_user_objects")
+  else if (_current_task == "add_user_object")
   {
+    std::cout<< "Adding UserObject!" <<std::endl;
 
+    InputParameters params = _factory.getValidParams("ReaktoroProblemUserObject");
+
+    params.set<std::vector<VariableName>>("species") = _species_names;
+
+    params.applyParameters(_pars);
+
+    _problem->addUserObject("ReaktoroProblemUserObject", "reaktoro_problem", params);
   }
 }

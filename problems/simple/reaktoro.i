@@ -80,18 +80,18 @@
     temperature = 'u'
     pressure = 'pressure'
 
-    [./Problems]
-      [./interior]
-          substance_names = 'H2O NaCl'
-    	  substance_amounts = '1 0.1'
-    	  substance_units = 'kg mol'
-      [../]
-
-      [./left_boundary]
-          substance_names = 'H2O NaCl'
-    	  substance_amounts = '1 0.1'
-    	  substance_units = 'kg mol'
-      [../]
-    []
+#    [./Problems]
+#      [./interior]
+#          substance_names = 'H2O NaCl'
+#    	  substance_amounts = '1 0.1'
+#    	  substance_units = 'kg mol'
+#      [../]
+#
+#      [./left_boundary]
+#          substance_names = 'H2O NaCl'
+#    	  substance_amounts = '1 0.1'
+#    	  substance_units = 'kg mol'
+#      [../]
+#    []
   []
 []

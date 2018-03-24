@@ -35,7 +35,7 @@ protected:
   unsigned int _n_vars;
   std::vector<MooseVariable *> _vars;
 
-  const ReaktoroProblemUserObject & _reactoro_problem;
+  const ReaktoroProblemUserObject & _reaktoro_problem;
 
   const VariableValue & _temp;
   const VariableValue & _pressure;

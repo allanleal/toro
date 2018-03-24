@@ -29,10 +29,10 @@ validParams<SpeciesAux>()
 
 SpeciesAux::SpeciesAux(const InputParameters & parameters)
     : AuxKernel(parameters), _n_vars(coupledComponents("species")),
-      _reactoro_problem(getUserObject<ReaktoroProblemUserObject>("reactoro_problem")),
+      _reaktoro_problem(getUserObject<ReaktoroProblemUserObject>("reaktoro_problem")),
       _temp(coupledValue("temperature")),
       _pressure(coupledValue("pressure")),
-      _state(_reactoro_problem.getInitialState())
+      _state(_reaktoro_problem.getInitialState())
 {
   /*
   EquilibriumProblem problem_bc(_system);
