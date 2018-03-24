@@ -48,6 +48,12 @@ validParams<AddSpeciesAction>()
   params.addRequiredParam<std::vector<Real>>("substance_amounts", "The amount of the substance_names");
   params.addRequiredParam<std::vector<std::string>>("substance_units", "The units to use for each amount (kg, mol)");
 
+  params.addParam<std::vector<SubdomainName>>(
+    "block", "The list of block ids (SubdomainID) that this object will be applied");
+
+  params.addParam<std::vector<BoundaryName>>(
+      "boundary", "The list of boundary IDs from the mesh where this boundary condition applies");
+
   return params;
 }
 
@@ -68,6 +74,11 @@ AddSpeciesAction::act()
     std::cout<< "Adding Kernels!" <<std::endl;
 
     InputParameters params = _factory.getValidParams("SpeciesAux");
+
+    if (isParamValid("block"))
+      params.set<std::vector<SubdomainName>>("block") = getParam<std::vector<SubdomainName>>("block");
+    else if (isParamValid("boundary"))
+      params.set<std::vector<BoundaryName>>("boundary") = getParam<std::vector<BoundaryName>>("boundary");
 
     params.set<std::vector<VariableName>>("temperature") = getParam<std::vector<VariableName>>("temperature");
     params.set<std::vector<VariableName>>("pressure") = getParam<std::vector<VariableName>>("pressure");

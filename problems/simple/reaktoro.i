@@ -80,6 +80,8 @@
 
         temperature = 'u'
         pressure = 'pressure'
+
+        boundary = right
       []
     []
   []
