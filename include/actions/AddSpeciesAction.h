@@ -31,6 +31,8 @@ public:
 private:
   void createChemicalSystem();
 
+  std::vector<VariableName> _nonlinear_element_names;
+  std::vector<VariableName> _element_names;
   std::vector<VariableName> _species_names;
 };
 

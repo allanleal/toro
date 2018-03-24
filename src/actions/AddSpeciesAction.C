@@ -86,6 +86,10 @@ AddSpeciesAction::act()
     params.set<AuxVariableName>("variable") = _species_names[0];
     params.set<std::vector<VariableName>>("species") = _species_names;
 
+    params.set<std::vector<VariableName>>("elements") = _element_names;
+
+    params.set<std::vector<VariableName>>("nonlinear_elements") = _nonlinear_element_names;
+
     params.set<UserObjectName>("reaktoro_problem") = _name + "_reaktoro_problem";
 
     params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on");
@@ -98,6 +102,25 @@ AddSpeciesAction::act()
 
     const auto & reaktoro_problem = _problem->getUserObject<ReaktoroProblemUserObject>(_name + "_reaktoro_problem");
 
+    auto elements = reaktoro_problem.getElementNames();
+
+    for (const auto & element : elements)
+    {
+      std::cout << element << std::endl;
+
+      // Add the variable
+      _problem->addAuxVariable("rt_" + element,
+                               FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
+                                      Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))));
+
+      _problem->addVariable(element,
+                            FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
+                                   Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))), 1.0);
+
+      _nonlinear_element_names.push_back(element);
+      _element_names.push_back("rt_" + element);
+    }
+
     auto species = reaktoro_problem.getSpeciesNames();
 
     for (const auto & species : species)
@@ -105,11 +128,11 @@ AddSpeciesAction::act()
       std::cout << species << std::endl;
 
       // Add the variable
-      _problem->addAuxVariable(species,
+      _problem->addAuxVariable("rt_" + species,
                                FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
                                       Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))));
 
-      _species_names.push_back(species);
+      _species_names.push_back("rt_" + species);
     }
   }
   else if (_current_task == "add_user_object")

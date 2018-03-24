@@ -30,10 +30,12 @@ public:
 
 protected:
   virtual Real computeValue();
-  virtual void computeVarValues(std::vector<Real> & values);
 
-  unsigned int _n_vars;
-  std::vector<MooseVariable *> _vars;
+  unsigned int _n_elements;
+  unsigned int _n_species;
+  std::vector<MooseVariable *> _nonlinear_element_vars;
+  std::vector<MooseVariable *> _element_vars;
+  std::vector<MooseVariable *> _species_vars;
 
   const ReaktoroProblemUserObject & _reaktoro_problem;
 

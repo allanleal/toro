@@ -7,15 +7,12 @@
 []
 
 [Variables]
-  [u]
+  [temp]
     initial_condition = 300
   []
 []
 
 [AuxVariables]
-  [from_sub]
-    initial_condition = 300
-  []
   [pressure]
     initial_condition = 5e6
   []
@@ -31,24 +28,24 @@
 [Kernels]
   [diff]
     type = Diffusion
-    variable = u
+    variable = temp
   []
   [time]
     type = TimeDerivative
-    variable = u
+    variable = temp
   []
 []
 
 [BCs]
   [left]
     type = DirichletBC
-    variable = u
+    variable = temp
     boundary = 'left'
     value = 300
   []
   [right]
     type = FunctionDirichletBC
-    variable = u
+    variable = temp
     boundary = 'right'
     function = bc_func
   []
@@ -69,32 +66,31 @@
 
 [Modules]
   [Reaktoro]
-    [./Problems]
-#      active = right
-      [./bulk]
+    [Problems]
+      # active = right
+      [bulk]
         family = LAGRANGE
-	order = FIRST
-
+        order = FIRST
         substance_names = 'H2O NaCl'
         substance_amounts = '1 0.1'
         substance_units = 'kg mol'
-
-        temperature = 'u'
+        temperature = 'temp'
         pressure = 'pressure'
       []
-      [./right]
+      [right]
         family = LAGRANGE
-	order = FIRST
-
+        order = FIRST
         substance_names = 'H2O'
         substance_amounts = '1.00000001'
         substance_units = 'kg'
-
-        temperature = 'u'
+        temperature = 'temp'
         pressure = 'pressure'
-
-	boundary = left
+        boundary = 'left'
       []
     []
   []
+[]
+
+[Problem]
+  kernel_coverage_check = false
 []

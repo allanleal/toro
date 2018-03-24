@@ -18,7 +18,10 @@ validParams<SpeciesAux>()
 {
   InputParameters params = validParams<AuxKernel>();
 
-  params.addRequiredCoupledVar("species", "unknown (nl-variable)");
+  params.addRequiredCoupledVar("species", "The names of the auxiliary variables that will hold the output of species");
+  params.addRequiredCoupledVar("elements", "The names of the auxiliary variables that will hold the output of elements");
+  params.addRequiredCoupledVar("nonlinear_elements", "The nonlinear fields to use as the elements");
+
   params.addPrivateParam<Reaktoro::ChemicalSystem *>("reaktoro_system");
 
   params.addCoupledVar("temperature", 300, "The temperature.");
@@ -28,7 +31,7 @@ validParams<SpeciesAux>()
 }
 
 SpeciesAux::SpeciesAux(const InputParameters & parameters)
-    : AuxKernel(parameters), _n_vars(coupledComponents("species")),
+    : AuxKernel(parameters), _n_elements(coupledComponents("elements")), _n_species(coupledComponents("species")),
       _reaktoro_problem(getUserObject<ReaktoroProblemUserObject>("reaktoro_problem")),
       _temp(coupledValue("temperature")),
       _pressure(coupledValue("pressure")),
@@ -41,47 +44,59 @@ SpeciesAux::SpeciesAux(const InputParameters & parameters)
   problem_bc.add("H2O", 1, "kg");
   problem_bc.add("NaCl", 0.1, "mol");
   */
+  for (unsigned int i = 0; i < _n_elements; i++)
+  {
+    coupledValue("nonlinear_elements",i);
 
-  for (unsigned int i = 0; i < _n_vars; i++)
+    _nonlinear_element_vars.push_back(dynamic_cast<MooseVariable *>(getVar("nonlinear_elements", i)));
+  }
+
+  for (unsigned int i = 0; i < _n_elements; i++)
+  {
+    // This is here so the dependency resolver knows that we're not going to try
+    // to access new values of this variable
+    coupledValueOld("elements",i);
+
+    _element_vars.push_back(dynamic_cast<MooseVariable *>(getVar("elements", i)));
+  }
+
+  for (unsigned int i = 0; i < _n_species; i++)
   {
     // This is here so the dependency resolver knows that we're not going to try
     // to access new values of this variable
     coupledValueOld("species",i);
 
-    _vars.push_back(dynamic_cast<MooseVariable *>(getVar("species", i)));
+    _species_vars.push_back(dynamic_cast<MooseVariable *>(getVar("species", i)));
   }
 }
 
 Real
 SpeciesAux::computeValue()
 {
-  std::vector<Real> values(_n_vars);
-
-  computeVarValues(values);
-
-  for (unsigned int i = 0; i < _n_vars; i++)
-    _vars[i]->setNodalValue(values[i]);
-
-  return _vars[0]->nodalValue()[0];
-}
-
-void
-SpeciesAux::computeVarValues(std::vector<Real> & values)
-{
-  // _state_bc.setSpeciesAmounts(i, val);
-  /*
-  for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
-    _state.setSpeciesAmount(i, species_amounts[i]);
-  */
-
   _state.setTemperature(_temp[_qp]);
   _state.setPressure(_pressure[_qp]);
 
   equilibrate(_state);
 
+  const auto & element_amounts = _state.elementAmounts();
   const auto & species_amounts = _state.speciesAmounts();
 
-  for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
-    values[i] = species_amounts[i];
+  for (auto i = beginIndex(element_amounts); i < element_amounts.size(); i++)
+    _element_vars[i]->setNodalValue(element_amounts[i]);
 
+  for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
+    _species_vars[i]->setNodalValue(species_amounts[i]);
+
+  return _nonlinear_element_vars[0]->nodalValue()[0];
 }
+
+/*
+void
+SpeciesAux::computeVarValues(std::vector<Real> & values)
+{
+  // _state_bc.setSpeciesAmounts(i, val);
+
+  for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
+    _state.setSpeciesAmount(i, species_amounts[i]);
+}
+*/

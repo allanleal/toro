@@ -25,6 +25,7 @@ class ReaktoroProblemUserObject : public GeneralUserObject
 public:
   ReaktoroProblemUserObject(const InputParameters & parameters);
 
+  std::vector<std::string> getElementNames() const;
   std::vector<std::string> getSpeciesNames() const;
   Reaktoro::ChemicalState getInitialState() const;
 

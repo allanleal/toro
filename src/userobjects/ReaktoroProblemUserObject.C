@@ -71,6 +71,12 @@ ReaktoroProblemUserObject::ReaktoroProblemUserObject(const InputParameters & par
 }
 
 std::vector<std::string>
+ReaktoroProblemUserObject::getElementNames() const
+{
+  return names(_system.elements());
+}
+
+std::vector<std::string>
 ReaktoroProblemUserObject::getSpeciesNames() const
 {
   return names(_system.species());
