@@ -73,28 +73,49 @@ AddSpeciesAction::act()
   {
     std::cout<< "Adding Kernels!" <<std::endl;
 
-    InputParameters params = _factory.getValidParams("SpeciesAux");
+    { // The AuxKernel to update the concentration values from RT
+      InputParameters params = _factory.getValidParams("SpeciesAux");
 
-    if (isParamValid("block"))
-      params.set<std::vector<SubdomainName>>("block") = getParam<std::vector<SubdomainName>>("block");
-    else if (isParamValid("boundary"))
-      params.set<std::vector<BoundaryName>>("boundary") = getParam<std::vector<BoundaryName>>("boundary");
+      if (isParamValid("block"))
+        params.set<std::vector<SubdomainName>>("block") = getParam<std::vector<SubdomainName>>("block");
+      else if (isParamValid("boundary"))
+        params.set<std::vector<BoundaryName>>("boundary") = getParam<std::vector<BoundaryName>>("boundary");
 
-    params.set<std::vector<VariableName>>("temperature") = getParam<std::vector<VariableName>>("temperature");
-    params.set<std::vector<VariableName>>("pressure") = getParam<std::vector<VariableName>>("pressure");
+      params.set<std::vector<VariableName>>("temperature") = getParam<std::vector<VariableName>>("temperature");
+      params.set<std::vector<VariableName>>("pressure") = getParam<std::vector<VariableName>>("pressure");
 
-    params.set<AuxVariableName>("variable") = _species_names[0];
-    params.set<std::vector<VariableName>>("species") = _species_names;
+      params.set<AuxVariableName>("variable") = _species_names[0];
+      params.set<std::vector<VariableName>>("species") = _species_names;
 
-    params.set<std::vector<VariableName>>("elements") = _element_names;
+      params.set<std::vector<VariableName>>("elements") = _element_names;
 
-    params.set<std::vector<VariableName>>("nonlinear_elements") = _nonlinear_element_names;
+      params.set<std::vector<VariableName>>("nonlinear_elements") = _nonlinear_element_names;
 
-    params.set<UserObjectName>("reaktoro_problem") = _name + "_reaktoro_problem";
+      params.set<UserObjectName>("reaktoro_problem") = _name + "_reaktoro_problem";
 
-    params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on");
+      params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on");
 
-    _problem->addAuxKernel("SpeciesAux", _name + "_species_aux", params);
+      _problem->addAuxKernel("SpeciesAux", _name + "_species_aux", params);
+    }
+
+    // If this is a boundary problem then we're not going to create Kernels
+    if (isParamValid("boundary"))
+      return;
+
+    { // The Kernels to solve for the movement of the elements
+
+      for (const auto & element_name : _nonlinear_element_names)
+      {
+        InputParameters params = _factory.getValidParams("Diffusion");
+
+        if (isParamValid("block"))
+          params.set<std::vector<SubdomainName>>("block") = getParam<std::vector<SubdomainName>>("block");
+
+        params.set<NonlinearVariableName>("variable") = element_name;
+
+        _problem->addKernel("Diffusion", element_name + "_diff", params);
+      }
+    }
   }
   else if (_current_task == "add_reaktoro_aux_variables")
   {
