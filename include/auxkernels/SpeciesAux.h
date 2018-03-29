@@ -11,7 +11,6 @@
 #define SPECIESAUX_H
 
 #include "AuxKernel.h"
-
 #include "Reaktoro/Reaktoro.hpp"
 
 class SpeciesAux;

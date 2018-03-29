@@ -1,63 +1,96 @@
 [Mesh]
   type = GeneratedMesh
   dim = 3
-  nx = 5
-  ny = 3
-  nz = 2
+  nx = 20
+  ny = 20
+  nz = 20
 []
 
 [Variables]
-  [u]
+  [./pressure]
+    initial_condition = 1e5
+  [../]
+  [./temperature]
     initial_condition = 300
-  []
-[]
-
-[AuxVariables]
-  [from_sub]
-    initial_condition = 300
-  []
-  [pressure]
-    initial_condition = 5e6
-  []
-[]
-
-[Functions]
-  [bc_func]
-    type = ParsedFunction
-    value = '300+(100*y)'
-  []
+  [../]
 []
 
 [Kernels]
-  [diff]
-    type = Diffusion
-    variable = u
-  []
-  [time]
-    type = TimeDerivative
-    variable = u
-  []
+  [./pressure_storage]
+    type =TimeDerivative
+    variable = pressure
+  [../]
+  [./DarcyFlow]
+    type = toroHydroDarcy
+    variable = pressure
+  [../]
+  [./temperature_storage]
+    type =TimeDerivative
+    variable = temperature
+  [../]
+  [./TemperatureConduction]
+    type = toroHeatConduction
+    variable = temperature
+  [../]
+[]
+
+[Materials]
+  [./material_darcy]
+    type = toroHydroConstant
+    block = 0
+   fluid_modulus = 1e9
+   fluid_viscosity = 1e-3
+   porosity = 0.2
+   permeability = 1e-15
+  [../]
+  [./temperature_material]
+    type = toroThermalConstant
+    block = 0
+    solid_heat_capacity = 2000
+    fluid_heat_capacity = 1000
+    solid_thermal_conductivity = 2.4
+    fluid_thermal_conductivity = 0.65
+    temperature = temperature
+  [../]
+  [./density_materia]
+    type = toroDensityConstant
+    block = 0
+    solid_density = 2000
+    fluid_density = 1000
+  [../]
 []
 
 [BCs]
-  [left]
+  [./leftP]
     type = DirichletBC
-    variable = u
+    variable = pressure
     boundary = 'left'
-    value = 300
-  []
-  [right]
-    type = FunctionDirichletBC
-    variable = u
+    value = 2e5
+  [../]
+  [./leftT]
+    type = DirichletBC
+    variable = temperature
+    boundary = 'left'
+    value = 400
+  [../]
+  [./rightP]
+    type = DirichletBC
+    variable = pressure
     boundary = 'right'
-    function = bc_func
-  []
+    value = 1e5
+  [../]
+  [./rightT]
+    type = DirichletBC
+    variable = temperature
+    boundary = 'right'
+    value = 300
+  [../]
 []
 
 [Executioner]
   type = Transient
-  num_steps = 5
-  dt = 0.1
+  num_steps = 10
+  dt = 10
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
@@ -75,7 +108,7 @@
     substance_names = 'H2O NaCl'
     substance_amounts = '1 0.1'
     substance_units = 'kg mol'
-    temperature = 'u'
+    temperature = 'temperature'
     pressure = 'pressure'
   []
 []

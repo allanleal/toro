@@ -8,7 +8,6 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SpeciesAux.h"
-#include "Reaktoro/Reaktoro.hpp"
 
 registerMooseObject("ToroApp", SpeciesAux);
 
