@@ -13,6 +13,7 @@
 #include "Factory.h"
 #include "FEProblem.h"
 #include "ReaktoroMultiApp.h"
+#include "ReaktoroProblemUserObject.h"
 
 #include "libmesh/string_to_enum.h"
 
@@ -47,6 +48,16 @@ validParams<AddSpeciesAction>()
   params.addRequiredParam<std::vector<Real>>("substance_amounts", "The amount of the substance_names");
   params.addRequiredParam<std::vector<std::string>>("substance_units", "The units to use for each amount (kg, mol)");
 
+  params.addParam<std::vector<SubdomainName>>(
+    "block", "The list of block ids (SubdomainID) that this object will be applied");
+
+  params.addParam<std::vector<BoundaryName>>(
+      "boundary", "The list of boundary IDs from the mesh where this boundary condition applies");
+
+  ExecFlagEnum execute_options = MooseUtils::getDefaultExecFlagEnum();
+  execute_options = EXEC_TIMESTEP_END;
+  params.addParam<ExecFlagEnum>("execute_on", execute_options, execute_options.getDocString());
+
   return params;
 }
 
@@ -58,52 +69,103 @@ AddSpeciesAction::AddSpeciesAction(const InputParameters & params)
 void
 AddSpeciesAction::act()
 {
-  if (_current_task == "add_aux_kernel")
+  if (_current_task == "add_reaktoro_aux_kernels")
   {
-    InputParameters params = _factory.getValidParams("SpeciesAux");
+    std::cout<< "Adding Kernels!" <<std::endl;
 
-    params.applyParameters(_pars);
+    { // The AuxKernel to update the concentration values from RT
+      InputParameters params = _factory.getValidParams("SpeciesAux");
 
-    params.set<std::vector<VariableName>>("temperature") = getParam<std::vector<VariableName>>("temperature");
-    params.set<std::vector<VariableName>>("pressure") = getParam<std::vector<VariableName>>("pressure");
+      if (isParamValid("block"))
+        params.set<std::vector<SubdomainName>>("block") = getParam<std::vector<SubdomainName>>("block");
+      else if (isParamValid("boundary"))
+        params.set<std::vector<BoundaryName>>("boundary") = getParam<std::vector<BoundaryName>>("boundary");
 
-    params.set<AuxVariableName>("variable") = _species_names[0];
-    params.set<std::vector<VariableName>>("species") = _species_names;
-    params.set<Reaktoro::ChemicalSystem *>("reaktoro_system") = &_system;
+      params.set<std::vector<VariableName>>("temperature") = getParam<std::vector<VariableName>>("temperature");
+      params.set<std::vector<VariableName>>("pressure") = getParam<std::vector<VariableName>>("pressure");
 
-    _problem->addAuxKernel("SpeciesAux", "species_aux", params);
+      params.set<AuxVariableName>("variable") = _species_names[0];
+      params.set<std::vector<VariableName>>("species") = _species_names;
+
+      params.set<std::vector<VariableName>>("elements") = _element_names;
+
+      params.set<std::vector<VariableName>>("nonlinear_elements") = _nonlinear_element_names;
+
+      params.set<UserObjectName>("reaktoro_problem") = _name + "_reaktoro_problem";
+
+      params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on");
+
+      _problem->addAuxKernel("SpeciesAux", _name + "_species_aux", params);
+    }
+
+    // If this is a boundary problem then we're not going to create Kernels
+    if (isParamValid("boundary"))
+      return;
+
+    { // The Kernels to solve for the movement of the elements
+
+      for (const auto & element_name : _nonlinear_element_names)
+      {
+        InputParameters params = _factory.getValidParams("Diffusion");
+
+        if (isParamValid("block"))
+          params.set<std::vector<SubdomainName>>("block") = getParam<std::vector<SubdomainName>>("block");
+
+        params.set<NonlinearVariableName>("variable") = element_name;
+
+        _problem->addKernel("Diffusion", element_name + "_diff", params);
+      }
+    }
   }
-  else if (_current_task == "add_aux_variable")
+  else if (_current_task == "add_reaktoro_aux_variables")
   {
-    createChemicalSystem();
+    std::cout<< "Adding Aux Variables!" <<std::endl;
 
-    auto species = names(_system.species());
+    const auto & reaktoro_problem = _problem->getUserObject<ReaktoroProblemUserObject>(_name + "_reaktoro_problem");
+
+    auto elements = reaktoro_problem.getElementNames();
+
+    for (const auto & element : elements)
+    {
+      std::cout << element << std::endl;
+
+      // Add the variable
+      _problem->addAuxVariable("rt_" + element,
+                               FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
+                                      Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))));
+
+      _problem->addVariable(element,
+                            FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
+                                   Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))), 1.0);
+
+      _nonlinear_element_names.push_back(element);
+      _element_names.push_back("rt_" + element);
+    }
+
+    auto species = reaktoro_problem.getSpeciesNames();
+
     for (const auto & species : species)
     {
       std::cout << species << std::endl;
 
       // Add the variable
-      _problem->addAuxVariable(species,
+      _problem->addAuxVariable("rt_" + species,
                                FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
                                       Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))));
 
-      _species_names.push_back(species);
+      _species_names.push_back("rt_" + species);
     }
   }
-}
+  else if (_current_task == "add_user_object")
+  {
+    std::cout<< "Adding UserObject!" <<std::endl;
 
-void
-AddSpeciesAction::createChemicalSystem()
-{
-  Database database("supcrt98.xml");
+    InputParameters params = _factory.getValidParams("ReaktoroProblemUserObject");
 
-  ChemicalEditor editor(database);
-  editor.addAqueousPhase({"H2O(l)", "H+", "OH-", "Na+", "Cl-"});
+    params.set<std::vector<VariableName>>("species") = _species_names;
 
-  _system = ChemicalSystem(editor);
+    params.applyParameters(_pars);
 
-
-
-//  _state_bc.output("state_bc.txt");
-//  _state_ic.output("state_ic.txt");
+    _problem->addUserObject("ReaktoroProblemUserObject", _name + "_reaktoro_problem", params);
+  }
 }

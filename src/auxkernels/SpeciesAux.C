@@ -8,6 +8,7 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SpeciesAux.h"
+#include "ReaktoroProblemUserObject.h"
 
 registerMooseObject("ToroApp", SpeciesAux);
 
@@ -17,30 +18,24 @@ validParams<SpeciesAux>()
 {
   InputParameters params = validParams<AuxKernel>();
 
-  params.addRequiredCoupledVar("species", "unknown (nl-variable)");
-  params.addPrivateParam<Reaktoro::ChemicalSystem *>("reaktoro_system");
+  params.addRequiredCoupledVar("species", "The names of the auxiliary variables that will hold the output of species");
+  params.addRequiredCoupledVar("elements", "The names of the auxiliary variables that will hold the output of elements");
+  params.addRequiredCoupledVar("nonlinear_elements", "The nonlinear fields to use as the elements");
 
-  params.addParam<std::string>("pressure_units", "Pa", "Units pressure is in (Pa)");
-  params.addParam<std::string>("temperature_units", "K", "Units temperature is in (K)");
+  params.addPrivateParam<Reaktoro::ChemicalSystem *>("reaktoro_system");
 
   params.addCoupledVar("temperature", 300, "The temperature.");
   params.addCoupledVar("pressure", 1e5, "The pressure.");
-
-  params.addRequiredParam<std::vector<std::string>>("substance_names", "Names of the substances, these go with substance_amounts and substance_units");
-  params.addRequiredParam<std::vector<Real>>("substance_amounts", "The amount of the substance_names");
-  params.addRequiredParam<std::vector<std::string>>("substance_units", "The units to use for each amount (kg, mol)");
 
   return params;
 }
 
 SpeciesAux::SpeciesAux(const InputParameters & parameters)
-    : AuxKernel(parameters), _n_vars(coupledComponents("species")),
-      _reaktoro_system(*getCheckedPointerParam<Reaktoro::ChemicalSystem *>("reaktoro_system")),
-      _substance_names(getParam<std::vector<std::string>>("substance_names")),
-      _substance_amounts(getParam<std::vector<Real>>("substance_amounts")),
-      _substance_units(getParam<std::vector<std::string>>("substance_units")),
+    : AuxKernel(parameters), _n_elements(coupledComponents("elements")), _n_species(coupledComponents("species")),
+      _reaktoro_problem(getUserObject<ReaktoroProblemUserObject>("reaktoro_problem")),
       _temp(coupledValue("temperature")),
-      _pressure(coupledValue("pressure"))
+      _pressure(coupledValue("pressure")),
+      _state(_reaktoro_problem.getInitialState())
 {
   /*
   EquilibriumProblem problem_bc(_system);
@@ -49,54 +44,59 @@ SpeciesAux::SpeciesAux(const InputParameters & parameters)
   problem_bc.add("H2O", 1, "kg");
   problem_bc.add("NaCl", 0.1, "mol");
   */
+  for (unsigned int i = 0; i < _n_elements; i++)
+  {
+    coupledValue("nonlinear_elements",i);
 
-  std::cout << "n_vars: "<<_n_vars<<std::endl;
+    _nonlinear_element_vars.push_back(dynamic_cast<MooseVariable *>(getVar("nonlinear_elements", i)));
+  }
 
+  for (unsigned int i = 0; i < _n_elements; i++)
+  {
+    // This is here so the dependency resolver knows that we're not going to try
+    // to access new values of this variable
+    coupledValueOld("elements",i);
 
-  Reaktoro::EquilibriumProblem reaktoro_problem(_reaktoro_system);
+    _element_vars.push_back(dynamic_cast<MooseVariable *>(getVar("elements", i)));
+  }
 
-  reaktoro_problem.setTemperature(300, getParam<std::string>("temperature_units"));
-  reaktoro_problem.setPressure(1e5, getParam<std::string>("pressure_units"));
+  for (unsigned int i = 0; i < _n_species; i++)
+  {
+    // This is here so the dependency resolver knows that we're not going to try
+    // to access new values of this variable
+    coupledValueOld("species",i);
 
-  for (unsigned int i = 0; i < _substance_names.size(); i++)
-    reaktoro_problem.add(_substance_names[i], _substance_amounts[i], _substance_units[i]);
-
-  _state = equilibrate(reaktoro_problem);
-
-  for (unsigned int i = 0; i < _n_vars; i++)
-    _vars.push_back(dynamic_cast<MooseVariable *>(getVar("species", i)));
+    _species_vars.push_back(dynamic_cast<MooseVariable *>(getVar("species", i)));
+  }
 }
 
 Real
 SpeciesAux::computeValue()
 {
-  std::vector<Real> values(_n_vars);
-
-  computeVarValues(values);
-
-  for (unsigned int i = 0; i < _n_vars; i++)
-    _vars[i]->setNodalValue(values[i]);
-
-  return _vars[0]->nodalValue()[0];
-}
-
-void
-SpeciesAux::computeVarValues(std::vector<Real> & values)
-{
-  // _state_bc.setSpeciesAmounts(i, val);
-  /*
-  for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
-    _state.setSpeciesAmount(i, species_amounts[i]);
-  */
-
   _state.setTemperature(_temp[_qp]);
   _state.setPressure(_pressure[_qp]);
 
   equilibrate(_state);
 
+  const auto & element_amounts = _state.elementAmounts();
   const auto & species_amounts = _state.speciesAmounts();
 
-  for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
-    values[i] = species_amounts[i];
+  for (auto i = beginIndex(element_amounts); i < element_amounts.size(); i++)
+    _element_vars[i]->setNodalValue(element_amounts[i]);
 
+  for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
+    _species_vars[i]->setNodalValue(species_amounts[i]);
+
+  return _nonlinear_element_vars[0]->nodalValue()[0];
 }
+
+/*
+void
+SpeciesAux::computeVarValues(std::vector<Real> & values)
+{
+  // _state_bc.setSpeciesAmounts(i, val);
+
+  for (auto i = beginIndex(species_amounts); i < species_amounts.size(); i++)
+    _state.setSpeciesAmount(i, species_amounts[i]);
+}
+*/

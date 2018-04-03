@@ -10,6 +10,8 @@
 #ifndef SPECIESAUX_H
 #define SPECIESAUX_H
 
+#include "ReaktoroProblemUserObject.h"
+
 #include "AuxKernel.h"
 #include "Reaktoro/Reaktoro.hpp"
 
@@ -28,16 +30,14 @@ public:
 
 protected:
   virtual Real computeValue();
-  virtual void computeVarValues(std::vector<Real> & values);
 
-  unsigned int _n_vars;
-  std::vector<MooseVariable *> _vars;
+  unsigned int _n_elements;
+  unsigned int _n_species;
+  std::vector<MooseVariable *> _nonlinear_element_vars;
+  std::vector<MooseVariable *> _element_vars;
+  std::vector<MooseVariable *> _species_vars;
 
-  Reaktoro::ChemicalSystem & _reaktoro_system;
-
-  const std::vector<std::string> & _substance_names;
-  const std::vector<Real> & _substance_amounts;
-  const std::vector<std::string> & _substance_units;
+  const ReaktoroProblemUserObject & _reaktoro_problem;
 
   const VariableValue & _temp;
   const VariableValue & _pressure;
